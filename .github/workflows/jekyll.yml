@@ -17,8 +17,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    outputs:
-      pages_enabled: ${{ steps.pages_config.outcome == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -40,13 +38,6 @@ jobs:
 
       - name: Minify JS files
         run: uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
-
-      - name: Configure GitHub Pages
-        id: pages_config
-        continue-on-error: true
-        uses: actions/configure-pages@v6.0.0
-        with:
-          enablement: true
 
       - name: Build with Jekyll
         run: bundle exec jekyll build --baseurl "/LJT-Homepage"
@@ -90,11 +81,28 @@ jobs:
           AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
           git -c http.https://github.com/.extraheader="${AUTH_HEADER}" push --force origin gh-pages
 
-      - name: Upload GitHub Pages artifact
-        if: steps.pages_config.outcome == 'success'
-        uses: actions/upload-pages-artifact@v5.0.0
-        with:
-          path: _site
+      - name: Smoke test live GitHub Pages site
+        timeout-minutes: 6
+        env:
+          SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            echo "Checking ${SITE_URL} (attempt ${attempt})"
+            if curl -L --fail --silent --show-error "${SITE_URL}" -o /tmp/home.html; then
+              if grep -q "Selected publications are listed below." /tmp/home.html && grep -q "SynLogic" /tmp/home.html; then
+                curl -L --fail --silent --show-error "${SITE_URL}publications/" -o /tmp/publications.html
+                grep -q "Composing Parameter-Efficient Modules" /tmp/publications.html
+                curl -L --fail --silent --show-error "${SITE_URL}cv/" -o /tmp/cv.html
+                grep -q "Zhiyuan Honor Scholarship" /tmp/cv.html
+                echo "Live Pages smoke test passed: ${SITE_URL}"
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo "The live Pages site did not serve the latest verified build within the polling window."
+          exit 1
 
       - name: Upload build artifact
         if: always()
@@ -103,9 +111,11 @@ jobs:
           name: ljt-homepage-site
           path: _site
 
+  # This fork publishes the generated static files from the gh-pages branch.
+  # Keep the Actions deployment definition available for repositories configured
+  # with GitHub Actions as their Pages source.
   deploy:
-    needs: build
-    if: needs.build.outputs.pages_enabled == 'true'
+    if: ${{ false }}
     permissions:
       pages: write
       id-token: write
@@ -113,6 +123,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
