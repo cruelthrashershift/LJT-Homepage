@@ -45,6 +45,26 @@ jobs:
         run: bundle exec jekyll build --baseurl "/LJT-Homepage"
         env:
           JEKYLL_ENV: production
+      - name: Verify rendered personal content
+        run: |
+          set -euo pipefail
+          wc -c _site/index.html _site/cv/index.html _site/publications/index.html
+          for term in "Junteng Liu" "jliugi@connect.ust.hk" "Vicent0205" "tbK9jl4AAAAJ" "junteng88716710" "Ph.D. in Computer Science" "B.Eng." "MINIMAX" "Tencent WXG" "Shanghai AI Lab" "Zhiyuan Honor Scholarship" "LLM reasoning and reinforcement learning" "Hallucination in vision-language models" "LLM truthfulness and interpretability" "SynLogic" "On the Perception Bottleneck of VLMs for Chart Understanding" "On the Universal Truthfulness Hyperplane Inside LLMs" "In-Context Sharpness as Alerts" "C-Eval" "Composing Parameter-Efficient Modules with Arithmetic Operations"; do
+            grep -Fq "$term" _site/index.html
+          done
+          for term in "SynLogic" "Chart Understanding" "Universal Truthfulness Hyperplane" "In-Context Sharpness" "C-Eval" "Composing Parameter-Efficient Modules" "EMNLP 2024" "ICML 2024" "NeurIPS 2023"; do
+            grep -Fq "$term" _site/publications/index.html
+          done
+          for term in "Education" "Research Experience" "Skills &amp; Research Interests" "Honors and Awards" "SynLogic" "MINIMAX" "Zhiyuan Honor Scholarship"; do
+            grep -Fq "$term" _site/cv/index.html
+          done
+          test -d _site/publications/synlogic
+          test -d _site/publications/chart-understanding
+          test -d _site/publications/truthfulness-hyperplane
+          test -d _site/publications/in-context-sharpness
+          test -d _site/publications/c-eval
+          test -d _site/publications/composing-parameter-efficient-modules
+          echo "All rendered personal-content checks passed."
       - name: Add static site marker
         run: touch _site/.nojekyll
       - name: Publish generated site to gh-pages branch
