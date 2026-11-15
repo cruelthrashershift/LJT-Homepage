@@ -51,7 +51,7 @@ Junteng Liu is a first-year PhD candidate at the HKUST NLP Group and graduated f
 
 ## Publications
 
-All six publications recorded in memory are listed below. The dedicated [Publications page]({{ '/publications/' | relative_url }}) and [Google Scholar profile](https://scholar.google.com/citations?hl=en&user=tbK9jl4AAAAJ&view_op=list_works&sortby=pubdate) also list his work.
+Selected publications are listed below. The dedicated [Publications page]({{ '/publications/' | relative_url }}) and [Google Scholar profile](https://scholar.google.com/citations?hl=en&user=tbK9jl4AAAAJ&view_op=list_works&sortby=pubdate) also provide the complete publication list.
 
 1. **Junteng Liu**, Yuanxiang Fan, Zhuo Jiang, Han Ding, Yongyi Hu, Chi Zhang, Yiqi Shi, Shitong Weng, Aili Chen, Shiqi Chen, Yunan Huang, Mozhi Zhang, Pengyu Zhao, Junjie Yan, and Junxian He. (2025). “SynLogic: Synthesizing Verifiable Reasoning Data at Scale for Learning Logical Reasoning and Beyond.” *arXiv*. **First author.**
 2. **Junteng Liu**, Weihao Zeng, Xiwen Zhang, Yijun Wang, Zifei Shan, and Junxian He. (2025). “On the Perception Bottleneck of VLMs for Chart Understanding.” *arXiv*. **First author.**
