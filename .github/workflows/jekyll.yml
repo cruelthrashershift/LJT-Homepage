@@ -1,4 +1,4 @@
-name: Build and publish Academic Pages site
+name: Build and deploy personal site
 
 on:
   push:
@@ -17,38 +17,45 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    outputs:
+      pages_enabled: ${{ steps.pages_config.outcome == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: '24'
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1.328.0
         with:
           ruby-version: '3.1'
           bundler-cache: true
           cache-version: 0
+
       - name: Install UglifyJS
         run: npm install -g uglify-js
+
       - name: Minify JS files
-        run: |
-          uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
+        run: uglifyjs assets/js/plugins/jquery.greedy-navigation.js assets/js/_main.js assets/js/theme.js -c -m -o assets/js/main.min.js
+
       - name: Configure GitHub Pages
-        id: pages
+        id: pages_config
         continue-on-error: true
         uses: actions/configure-pages@v6.0.0
         with:
           enablement: true
+
       - name: Build with Jekyll
         run: bundle exec jekyll build --baseurl "/LJT-Homepage"
         env:
           JEKYLL_ENV: production
+
       - name: Verify rendered personal content
         run: |
           set -euo pipefail
-          wc -c _site/index.html _site/cv/index.html _site/publications/index.html
           for term in "Junteng Liu" "jliugi@connect.ust.hk" "Vicent0205" "tbK9jl4AAAAJ" "junteng88716710" "Ph.D. in Computer Science" "B.Eng." "MINIMAX" "Tencent WXG" "Shanghai AI Lab" "Zhiyuan Honor Scholarship" "LLM reasoning and reinforcement learning" "Hallucination in vision-language models" "LLM truthfulness and interpretability" "SynLogic" "On the Perception Bottleneck of VLMs for Chart Understanding" "On the Universal Truthfulness Hyperplane Inside LLMs" "In-Context Sharpness as Alerts" "C-Eval" "Composing Parameter-Efficient Modules with Arithmetic Operations"; do
             grep -Fq "$term" _site/index.html
           done
@@ -65,8 +72,10 @@ jobs:
           test -d _site/publications/c-eval
           test -d _site/publications/composing-parameter-efficient-modules
           echo "All rendered personal-content checks passed."
+
       - name: Add static site marker
         run: touch _site/.nojekyll
+
       - name: Publish generated site to gh-pages branch
         working-directory: _site
         env:
@@ -80,19 +89,30 @@ jobs:
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           AUTH_HEADER="AUTHORIZATION: basic $(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
           git -c http.https://github.com/.extraheader="${AUTH_HEADER}" push --force origin gh-pages
+
+      - name: Upload GitHub Pages artifact
+        if: steps.pages_config.outcome == 'success'
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: _site
+
       - name: Upload build artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ljt-homepage-site
           path: _site
 
   deploy:
-    if: ${{ false }}
+    needs: build
+    if: needs.build.outputs.pages_enabled == 'true'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
